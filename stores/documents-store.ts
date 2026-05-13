@@ -81,6 +81,9 @@ export const useDocumentsStore = create<DocumentsState>((set, get) => ({
         pageCount: 1,
         language: "es",
       },
+      pageSetup: {
+        size: "letter",
+      },
       chatHistory: [],
     };
 

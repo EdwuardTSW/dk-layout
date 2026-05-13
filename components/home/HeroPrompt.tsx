@@ -3,25 +3,64 @@
 import { ArrowRight, FileText, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import type { DocumentFormat } from "@/lib/types";
+import type { DocumentFormat, TiptapJSON } from "@/lib/types";
 import { useDocumentsStore } from "@/stores/documents-store";
+
+type GeneratedDocumentResponse = {
+  title?: string;
+  content?: TiptapJSON;
+  error?: string;
+};
 
 export function HeroPrompt() {
   const router = useRouter();
   const createDocument = useDocumentsStore((state) => state.createDocument);
   const [prompt, setPrompt] = useState("");
   const [format, setFormat] = useState<DocumentFormat>("docx");
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     startTransition(async () => {
-      const document = await createDocument({
-        title: prompt.trim() ? "Documento creado con IA" : "Documento sin titulo",
-        format,
-        prompt,
-      });
-      router.push(`/editor/${document.id}`);
+      const trimmedPrompt = prompt.trim();
+      setError(null);
+
+      // Sin prompt → crear documento en blanco y navegar directamente
+      if (!trimmedPrompt) {
+        const document = await createDocument({ format, title: "Documento sin titulo" });
+        router.push(`/editor/${document.id}`);
+        return;
+      }
+
+      // Con prompt → intentar generar con IA
+      try {
+        const response = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: trimmedPrompt, format }),
+        });
+        const data = await response.json() as GeneratedDocumentResponse;
+
+        if (!response.ok || data.error || !data.content) {
+          throw new Error(data.error || "No se pudo generar con IA.");
+        }
+
+        // Generacion exitosa → crear documento y navegar
+        const document = await createDocument({
+          title: data.title || "Documento creado con IA",
+          format,
+          content: data.content,
+        });
+        router.push(`/editor/${document.id}`);
+      } catch (generateError) {
+        // Fallo de IA → mostrar error, NO navegar para que el usuario reintente
+        setError(
+          generateError instanceof Error
+            ? generateError.message
+            : "No se pudo generar con IA. Revisa tu conexion e intenta de nuevo.",
+        );
+      }
     });
   }
 
@@ -81,6 +120,11 @@ export function HeroPrompt() {
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
+          {error ? (
+            <p className="mt-3 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm leading-6 text-amber-100">
+              {error}
+            </p>
+          ) : null}
         </form>
       </div>
     </section>

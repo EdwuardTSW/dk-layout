@@ -39,3 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# claude code / ai tools (configuracion local de herramientas)
+.claude/
+.codebuddy/
+.agents/
+skills-lock.json
+
+# imagenes y assets de desarrollo local
+src/
+
+# logs generales
+*.log

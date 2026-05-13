@@ -1,5 +1,7 @@
 export type DocumentFormat = "docx" | "pdf" | "report" | "presentation";
 
+export type PageSize = "letter" | "a4" | "legal";
+
 export type DocumentStatus = "draft" | "completed" | "trashed";
 
 export type TemplateCategory =
@@ -38,6 +40,10 @@ export type DocumentMetadata = {
   language: "es" | "en";
 };
 
+export type DocumentPageSetup = {
+  size: PageSize;
+};
+
 export type Document = {
   id: string;
   title: string;
@@ -48,6 +54,7 @@ export type Document = {
   createdAt: number;
   updatedAt: number;
   metadata: DocumentMetadata;
+  pageSetup?: DocumentPageSetup;
   chatHistory: ChatMessage[];
 };
 
